@@ -25,7 +25,7 @@
                   "name": "TimeRange",
                   "type": 4,
                   "value": {
-                    "durationMs": 86400000
+                    "durationMs": 1800000
                   },
                   "typeSettings": {
                     "selectableValues": [
@@ -114,7 +114,7 @@
               "version": "KqlItem/1.0",
               "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_RG=iif(isempty(VM1_s), '', split(VM1_s,'/')[0])\r\n| extend VM_name=iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| where iif(isempty('{VM_RG}'), true, VM_RG contains '{VM_RG}')\r\n| where iif(isempty('{VM_Name}'), true, VM_name contains '{VM_Name}')\r\n| where isnotempty(FlowDirection_s) and isnotempty(FlowStatus_s)\r\n| extend FlowDirectionLong=iif(FlowDirection_s == \"I\", \"Inbound\", \"Outbound\")\r\n| extend FlowStatusLong=iif(FlowStatus_s == \"A\", \"Allowed\", \"Denied\")\r\n| extend FlowLabel = strcat(FlowDirectionLong, \"/\", FlowStatusLong)\r\n| project TimeGenerated, InboundBytes_d, OutboundBytes_d, VM_RG, VM_name, FlowLabel, NSGList_s\r\n| summarize sum(InboundBytes_d) by FlowLabel, bin(TimeGenerated, 5m)\r\n| render areachart ",
               "size": 0,
-              "title": "Inbound bytes",
+              "title": "Ingress bytes (in and outbound flows)",
               "timeContext": {
                 "durationMs": 86400000
               },
@@ -130,7 +130,7 @@
               "version": "KqlItem/1.0",
               "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_RG=iif(isempty(VM1_s), '', split(VM1_s,'/')[0])\r\n| extend VM_name=iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| where iif(isempty('{VM_RG}'), true, VM_RG contains '{VM_RG}')\r\n| where iif(isempty('{VM_Name}'), true, VM_name contains '{VM_Name}')\r\n| where isnotempty(FlowDirection_s) and isnotempty(FlowStatus_s)\r\n| extend FlowDirectionLong=iif(FlowDirection_s == \"I\", \"Inbound\", \"Outbound\")\r\n| extend FlowStatusLong=iif(FlowStatus_s == \"A\", \"Allowed\", \"Denied\")\r\n| extend FlowLabel = strcat(FlowDirectionLong, \"/\", FlowStatusLong)\r\n| project TimeGenerated, InboundBytes_d, OutboundBytes_d, VM_RG, VM_name, FlowLabel, NSGList_s\r\n| summarize sum(OutboundBytes_d) by FlowLabel, bin(TimeGenerated, 5m)\r\n| render areachart ",
               "size": 0,
-              "title": "Outbound bytes",
+              "title": "Egress bytes (in and outbound flows)",
               "timeContext": {
                 "durationMs": 86400000
               },
@@ -160,7 +160,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_RG=iif(isempty(VM1_s), '', split(VM1_s,'/')[0])\r\n| extend VM_name=iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| where iif(isempty('{VM_RG}'), true, VM_RG contains '{VM_RG}')\r\n| where iif(isempty('{VM_Name}'), true, VM_name contains '{VM_Name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_RG, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, bin(TimeGenerated, 5m)\r\n| render areachart ",
+              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_RG=iif(isempty(VM1_s), '', split(VM1_s,'/')[0])\r\n| extend VM_name=iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| where iif(isempty('{VM_RG}'), true, VM_RG contains '{VM_RG}')\r\n| where iif(isempty('{VM_Name}'), true, VM_name contains '{VM_Name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_RG, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, bin(TimeGenerated, 5m)\r\n| render areachart",
               "size": 0,
               "title": "Volume (Inbound+Outbound) per destination port",
               "timeContext": {
@@ -192,7 +192,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend SrcVM_RG = iif(isempty(VM1_s), '', split(VM1_s,'/')[0])\r\n| extend SrcVM_name = iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| distinct SrcIP_s, DestIP_s, SrcVM_name, SrcVM_RG\r\n| summarize count() by SrcIP_s, SrcVM_name, SrcVM_RG\r\n| project-rename NumOfDstIPs=count_\r\n| top 5 by NumOfDstIPs\r\n",
+              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend SrcVM_RG = iif(isempty(VM1_s), '', split(VM1_s,'/')[0])\r\n| extend SrcVM_name = iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| distinct SrcIP_s, DestIP_s, SrcVM_name, SrcVM_RG\r\n| summarize count() by SrcIP_s, SrcVM_name, SrcVM_RG\r\n| where isnotempty(SrcIP_s)\r\n| project-rename NumOfDstIPs=count_\r\n| top 5 by NumOfDstIPs\r\n",
               "size": 0,
               "title": "Top VMs with number of Dest IPs",
               "timeContext": {
@@ -203,6 +203,38 @@
             },
             "customWidth": "50",
             "name": "query - 6"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_RG=iif(isempty(VM1_s), '', split(VM1_s,'/')[0])\r\n| extend VM_name=iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| where iif(isempty('{VM_RG}'), true, VM_RG contains '{VM_RG}')\r\n| where iif(isempty('{VM_Name}'), true, VM_name contains '{VM_Name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_RG, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, bin(TimeGenerated, 5m)\r\n| summarize avg(sum_Volume) by DestPortLong\r\n| join (AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_RG=iif(isempty(VM1_s), '', split(VM1_s,'/')[0])\r\n| extend VM_name=iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| where iif(isempty('{VM_RG}'), true, VM_RG contains '{VM_RG}')\r\n| where iif(isempty('{VM_Name}'), true, VM_name contains '{VM_Name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_RG, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, bin(TimeGenerated, 5m))\r\non DestPortLong\r\n| extend DiffToAvg = abs(sum_Volume - avg_sum_Volume)\r\n| where DiffToAvg > 0\r\n| project TimeGenerated, DestPortLong, DiffToAvg\r\n| render areachart \r\n",
+              "size": 0,
+              "title": "Absolute Average Deviation Bandwidth per Port",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "customWidth": "50",
+            "name": "query - 7"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_RG=iif(isempty(VM1_s), '', split(VM1_s,'/')[0])\r\n| extend VM_name=iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| where iif(isempty('{VM_RG}'), true, VM_RG contains '{VM_RG}')\r\n| where iif(isempty('{VM_Name}'), true, VM_name contains '{VM_Name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_RG, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, VM_name, bin(TimeGenerated, 5m)\r\n| summarize avg(sum_Volume) by DestPortLong, VM_name\r\n| join (AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_RG=iif(isempty(VM1_s), '', split(VM1_s,'/')[0])\r\n| extend VM_name=iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| where iif(isempty('{VM_RG}'), true, VM_RG contains '{VM_RG}')\r\n| where iif(isempty('{VM_Name}'), true, VM_name contains '{VM_Name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_RG, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, VM_name, bin(TimeGenerated, 5m))\r\non DestPortLong, VM_name\r\n| extend DiffToAvg = round(abs(sum_Volume - avg_sum_Volume))\r\n| project TimeGenerated, DestPortLong, DiffToAvg, VM_name\r\n| where isnotempty(VM_name) and DiffToAvg > 0\r\n| summarize max(DiffToAvg) by VM_name, DestPortLong\r\n| sort by max_DiffToAvg desc\r\n",
+              "size": 0,
+              "title": "Top VMs and protocols per Bandwidth Absolute Average Deviation",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "customWidth": "50",
+            "name": "query - 8"
           }
         ]
       },
@@ -210,7 +242,7 @@
     }
   ],
   "fallbackResourceIds": [
-    "/subscriptions/ebb79bc0-aa86-44a7-8111-cabbe0c43993/resourcegroups/ch1-opsrg-pri/providers/microsoft.operationalinsights/workspaces/ch1-la"
+    "/subscriptions/e7da9914-9b05-4891-893c-546cb7b0422e/resourceGroups/flowlogs/providers/Microsoft.OperationalInsights/workspaces/log6107"
   ],
   "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
 }
