@@ -239,6 +239,168 @@
         ]
       },
       "name": "MainGroup"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "# Destination IP traffic\r\n\r\nThe following charts can be used to diagnose traffic arriving to a specific application"
+      },
+      "name": "text - 2"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "c9611679-9c79-4637-b157-fe189c5c89f3",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "TimeRange",
+                  "label": "Time Range",
+                  "type": 4,
+                  "isRequired": true,
+                  "value": {
+                    "durationMs": 3600000
+                  },
+                  "typeSettings": {
+                    "selectableValues": [
+                      {
+                        "durationMs": 300000
+                      },
+                      {
+                        "durationMs": 900000
+                      },
+                      {
+                        "durationMs": 1800000
+                      },
+                      {
+                        "durationMs": 3600000
+                      },
+                      {
+                        "durationMs": 14400000
+                      },
+                      {
+                        "durationMs": 43200000
+                      },
+                      {
+                        "durationMs": 86400000
+                      },
+                      {
+                        "durationMs": 172800000
+                      },
+                      {
+                        "durationMs": 604800000
+                      },
+                      {
+                        "durationMs": 2592000000
+                      },
+                      {
+                        "durationMs": 5184000000
+                      }
+                    ]
+                  },
+                  "timeContext": {
+                    "durationMs": 86400000
+                  }
+                },
+                {
+                  "id": "5d2ab077-aac4-4d12-bad0-46e4a7546556",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "VM_name",
+                  "label": "Destination VM Name",
+                  "type": 2,
+                  "query": "AzureNetworkAnalytics_CL\r\n| where isnotempty (VM_s)\r\n| extend VM_Name=tostring(split(VM2_s,'/')[1])\r\n| distinct VM_Name\r\n| where isnotempty(VM_Name)\r\n| sort by VM_Name asc",
+                  "value": "vm03",
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "timeContext": {
+                    "durationMs": 86400000
+                  },
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "parameters - 0"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_name=iif(isempty(VM2_s), '', split(VM2_s,'/')[1])\r\n| where iif(isempty('{VM_name}'), True, VM_name contains '{VM_name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| where FlowDirection_s == 'I' and FlowStatus_s == \"A\"\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, bin(TimeGenerated, 5m)\r\n| render areachart",
+              "size": 0,
+              "title": "Inbound Allowed bandwidth",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "customWidth": "50",
+            "name": "query - 1"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_name=iif(isempty(VM2_s), '', split(VM2_s,'/')[1])\r\n| where iif(isempty('{VM_name}'), True, VM_name contains '{VM_name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| where FlowDirection_s == 'O' and FlowStatus_s == \"A\"\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, bin(TimeGenerated, 5m)\r\n| render areachart",
+              "size": 0,
+              "title": "Outbound Allowed Bandwidth",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "customWidth": "50",
+            "name": "query - 2"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_name=iif(isempty(VM2_s), '', split(VM2_s,'/')[1])\r\n| where iif(isempty('{VM_name}'), True, VM_name contains '{VM_name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| where FlowDirection_s == 'I' and FlowStatus_s == \"D\"\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, bin(TimeGenerated, 5m)\r\n| render areachart",
+              "size": 0,
+              "title": "Inbound Dropped Bandwidth",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "customWidth": "50",
+            "name": "query - 3"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_name=iif(isempty(VM2_s), '', split(VM2_s,'/')[1])\r\n| where iif(isempty('{VM_name}'), True, VM_name contains '{VM_name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| where FlowDirection_s == 'O' and FlowStatus_s == \"D\"\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, bin(TimeGenerated, 5m)\r\n| render areachart",
+              "size": 0,
+              "title": "Outbound Dropped Bandwidth",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "customWidth": "50",
+            "name": "query - 4"
+          }
+        ]
+      },
+      "name": "dst"
     }
   ],
   "fallbackResourceIds": [
