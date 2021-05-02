@@ -1,200 +1,216 @@
 {
-    "version": "Notebook/1.0",
-    "items": [
-      {
-        "type": 1,
-        "content": {
-          "json": "## NSG Flow Logs Analytics \n---\n\nThis workbook contains some queries to characterize existing Azure traffic. Different statistics will be measured, so that anomalies can be visually identified looking at the different charts."
-        },
-        "name": "Header"
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "## NSG Flow Logs Analytics \n---\n\nThis workbook contains some queries to characterize existing Azure traffic. Different statistics will be measured, so that anomalies can be visually identified looking at the different charts."
       },
-      {
-        "type": 12,
-        "content": {
-          "version": "NotebookGroup/1.0",
-          "groupType": "editable",
-          "items": [
-            {
-              "type": 9,
-              "content": {
-                "version": "KqlParameterItem/1.0",
-                "parameters": [
-                  {
-                    "id": "e10e3e8a-8d95-412b-988a-5c4c5fd62dd2",
-                    "version": "KqlParameterItem/1.0",
-                    "name": "TimeRange",
-                    "type": 4,
-                    "value": {
-                      "durationMs": 86400000
-                    },
-                    "typeSettings": {
-                      "selectableValues": [
-                        {
-                          "durationMs": 300000
-                        },
-                        {
-                          "durationMs": 900000
-                        },
-                        {
-                          "durationMs": 1800000
-                        },
-                        {
-                          "durationMs": 3600000
-                        },
-                        {
-                          "durationMs": 14400000
-                        },
-                        {
-                          "durationMs": 43200000
-                        },
-                        {
-                          "durationMs": 86400000
-                        },
-                        {
-                          "durationMs": 604800000
-                        },
-                        {
-                          "durationMs": 1209600000
-                        },
-                        {
-                          "durationMs": 2592000000
-                        }
-                      ],
-                      "allowCustom": true
-                    },
-                    "timeContext": {
-                      "durationMs": 86400000
-                    },
-                    "label": "Time Range"
+      "name": "Header"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "e10e3e8a-8d95-412b-988a-5c4c5fd62dd2",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "TimeRange",
+                  "type": 4,
+                  "value": {
+                    "durationMs": 86400000
                   },
-                  {
-                    "id": "86f11ec3-fa34-4300-aa1e-2946431a88a5",
-                    "version": "KqlParameterItem/1.0",
-                    "name": "VM_RG",
-                    "label": "VM Resource Group",
-                    "type": 2,
-                    "query": "AzureNetworkAnalytics_CL\r\n| where isnotempty (VM_s)\r\n| extend VM_RG=tostring(split(VM_s,'/')[0])\r\n| distinct VM_RG",
-                    "value": "nvalab",
-                    "typeSettings": {
-                      "additionalResourceOptions": []
-                    },
-                    "timeContext": {
-                      "durationMs": 86400000
-                    },
-                    "queryType": 0,
-                    "resourceType": "microsoft.operationalinsights/workspaces"
+                  "typeSettings": {
+                    "selectableValues": [
+                      {
+                        "durationMs": 300000
+                      },
+                      {
+                        "durationMs": 900000
+                      },
+                      {
+                        "durationMs": 1800000
+                      },
+                      {
+                        "durationMs": 3600000
+                      },
+                      {
+                        "durationMs": 14400000
+                      },
+                      {
+                        "durationMs": 43200000
+                      },
+                      {
+                        "durationMs": 86400000
+                      },
+                      {
+                        "durationMs": 604800000
+                      },
+                      {
+                        "durationMs": 1209600000
+                      },
+                      {
+                        "durationMs": 2592000000
+                      }
+                    ],
+                    "allowCustom": true
                   },
-                  {
-                    "id": "b8906d3d-0334-4147-afb8-6920bc9890cd",
-                    "version": "KqlParameterItem/1.0",
-                    "name": "VM_Name",
-                    "label": "VM Name",
-                    "type": 2,
-                    "query": "AzureNetworkAnalytics_CL\r\n| where isnotempty (VM_s)\r\n| extend VM_Name=tostring(split(VM_s,'/')[1])\r\n| distinct VM_Name",
-                    "value": null,
-                    "typeSettings": {
-                      "additionalResourceOptions": []
-                    },
-                    "timeContext": {
-                      "durationMs": 86400000
-                    },
-                    "queryType": 0,
-                    "resourceType": "microsoft.operationalinsights/workspaces"
-                  }
-                ],
-                "style": "pills",
-                "queryType": 0,
-                "resourceType": "microsoft.operationalinsights/workspaces"
-              },
-              "name": "parameters - 0"
-            },
-            {
-              "type": 3,
-              "content": {
-                "version": "KqlItem/1.0",
-                "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_RG=split(VM_s,'/')[0]\r\n| extend VM_name=split(VM_s,'/')[1]\r\n| where VM_RG contains '{VM_RG}'\r\n| where VM_name contains '{VM_Name}'\r\n| where isnotempty(FlowDirection_s) and isnotempty(FlowStatus_s)\r\n| extend FlowDirectionLong=iif(FlowDirection_s == \"I\", \"Inbound\", \"Outbound\")\r\n| extend FlowStatusLong=iif(FlowStatus_s == \"A\", \"Allowed\", \"Denied\")\r\n| extend FlowLabel = strcat(FlowDirectionLong, \"/\", FlowStatusLong)\r\n| project TimeGenerated, InboundBytes_d, OutboundBytes_d, VM_RG, VM_name, FlowLabel, NSGList_s\r\n| summarize sum(InboundBytes_d) by FlowLabel, bin(TimeGenerated, 5m)\r\n| render areachart ",
-                "size": 0,
-                "title": "Inbound bytes",
-                "timeContext": {
-                  "durationMs": 86400000
+                  "timeContext": {
+                    "durationMs": 86400000
+                  },
+                  "label": "Time Range"
                 },
-                "queryType": 0,
-                "resourceType": "microsoft.operationalinsights/workspaces"
-              },
-              "customWidth": "50",
-              "name": "query - 1"
-            },
-            {
-              "type": 3,
-              "content": {
-                "version": "KqlItem/1.0",
-                "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_RG=split(VM_s,'/')[0]\r\n| extend VM_name=split(VM_s,'/')[1]\r\n| where VM_RG contains '{VM_RG}'\r\n| where VM_name contains '{VM_Name}'\r\n| where isnotempty(FlowDirection_s) and isnotempty(FlowStatus_s)\r\n| extend FlowDirectionLong=iif(FlowDirection_s == \"I\", \"Inbound\", \"Outbound\")\r\n| extend FlowStatusLong=iif(FlowStatus_s == \"A\", \"Allowed\", \"Denied\")\r\n| extend FlowLabel = strcat(FlowDirectionLong, \"/\", FlowStatusLong)\r\n| project TimeGenerated, InboundBytes_d, OutboundBytes_d, VM_RG, VM_name, FlowLabel, NSGList_s\r\n| summarize sum(OutboundBytes_d) by FlowLabel, bin(TimeGenerated, 5m)\r\n| render areachart ",
-                "size": 0,
-                "title": "Outbound bytes",
-                "timeContext": {
-                  "durationMs": 86400000
+                {
+                  "id": "86f11ec3-fa34-4300-aa1e-2946431a88a5",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "VM_RG",
+                  "label": "Source VM Resource Group",
+                  "type": 2,
+                  "query": "AzureNetworkAnalytics_CL\r\n| where isnotempty (VM_s)\r\n| extend VM_RG=tostring(split(VM_s,'/')[0])\r\n| distinct VM_RG",
+                  "value": null,
+                  "typeSettings": {
+                    "additionalResourceOptions": []
+                  },
+                  "timeContext": {
+                    "durationMs": 86400000
+                  },
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces"
                 },
-                "queryType": 0,
-                "resourceType": "microsoft.operationalinsights/workspaces"
-              },
-              "customWidth": "50",
-              "name": "query - 2"
+                {
+                  "id": "b8906d3d-0334-4147-afb8-6920bc9890cd",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "VM_Name",
+                  "label": "Source VM Name",
+                  "type": 2,
+                  "query": "AzureNetworkAnalytics_CL\r\n| where isnotempty (VM_s)\r\n| extend VM_Name=tostring(split(VM_s,'/')[1])\r\n| distinct VM_Name",
+                  "value": null,
+                  "typeSettings": {
+                    "additionalResourceOptions": []
+                  },
+                  "timeContext": {
+                    "durationMs": 86400000
+                  },
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
             },
-            {
-              "type": 3,
-              "content": {
-                "version": "KqlItem/1.0",
-                "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_RG=split(VM_s,'/')[0]\r\n| extend VM_name=tostring(split(VM_s,'/')[1])\r\n| where VM_RG contains '{VM_RG}'\r\n| where VM_name contains '{VM_Name}'\r\n| where isnotempty(SrcIP_s) \r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| project TimeGenerated, Volume, SrcIP_s\r\n| summarize sum(Volume) by SrcIP_s, bin(TimeGenerated, 5m)\r\n| render areachart ",
-                "size": 0,
-                "title": "Volume (Inbound+Outbound) per source IP",
-                "timeContext": {
-                  "durationMs": 86400000
-                },
-                "queryType": 0,
-                "resourceType": "microsoft.operationalinsights/workspaces"
+            "name": "parameters - 0"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_RG=iif(isempty(VM1_s), '', split(VM1_s,'/')[0])\r\n| extend VM_name=iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| where iif(isempty('{VM_RG}'), true, VM_RG contains '{VM_RG}')\r\n| where iif(isempty('{VM_Name}'), true, VM_name contains '{VM_Name}')\r\n| where isnotempty(FlowDirection_s) and isnotempty(FlowStatus_s)\r\n| extend FlowDirectionLong=iif(FlowDirection_s == \"I\", \"Inbound\", \"Outbound\")\r\n| extend FlowStatusLong=iif(FlowStatus_s == \"A\", \"Allowed\", \"Denied\")\r\n| extend FlowLabel = strcat(FlowDirectionLong, \"/\", FlowStatusLong)\r\n| project TimeGenerated, InboundBytes_d, OutboundBytes_d, VM_RG, VM_name, FlowLabel, NSGList_s\r\n| summarize sum(InboundBytes_d) by FlowLabel, bin(TimeGenerated, 5m)\r\n| render areachart ",
+              "size": 0,
+              "title": "Inbound bytes",
+              "timeContext": {
+                "durationMs": 86400000
               },
-              "customWidth": "50",
-              "name": "query - 3"
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
             },
-            {
-              "type": 3,
-              "content": {
-                "version": "KqlItem/1.0",
-                "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_RG=split(VM_s,'/')[0]\r\n| extend VM_name=tostring(split(VM_s,'/')[1])\r\n| where VM_RG contains '{VM_RG}'\r\n| where VM_name contains '{VM_Name}'\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_RG, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, bin(TimeGenerated, 5m)\r\n| render areachart ",
-                "size": 0,
-                "title": "Volume (Inbound+Outbound) per destination port",
-                "timeContext": {
-                  "durationMs": 86400000
-                },
-                "queryType": 0,
-                "resourceType": "microsoft.operationalinsights/workspaces"
+            "customWidth": "50",
+            "name": "query - 1"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_RG=iif(isempty(VM1_s), '', split(VM1_s,'/')[0])\r\n| extend VM_name=iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| where iif(isempty('{VM_RG}'), true, VM_RG contains '{VM_RG}')\r\n| where iif(isempty('{VM_Name}'), true, VM_name contains '{VM_Name}')\r\n| where isnotempty(FlowDirection_s) and isnotempty(FlowStatus_s)\r\n| extend FlowDirectionLong=iif(FlowDirection_s == \"I\", \"Inbound\", \"Outbound\")\r\n| extend FlowStatusLong=iif(FlowStatus_s == \"A\", \"Allowed\", \"Denied\")\r\n| extend FlowLabel = strcat(FlowDirectionLong, \"/\", FlowStatusLong)\r\n| project TimeGenerated, InboundBytes_d, OutboundBytes_d, VM_RG, VM_name, FlowLabel, NSGList_s\r\n| summarize sum(OutboundBytes_d) by FlowLabel, bin(TimeGenerated, 5m)\r\n| render areachart ",
+              "size": 0,
+              "title": "Outbound bytes",
+              "timeContext": {
+                "durationMs": 86400000
               },
-              "customWidth": "50",
-              "name": "query - 4"
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
             },
-            {
-              "type": 3,
-              "content": {
-                "version": "KqlItem/1.0",
-                "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_RG=split(VM_s,'/')[0]\r\n| extend VM_name=tostring(split(VM_s,'/')[1])\r\n//| where VM_RG contains '{VM_RG}' and VM_name contains '{VM_Name}'\r\n| where isnotempty(SrcIP_s) and isnotempty(DestIP_s)\r\n| distinct bin(TimeGenerated, 5m), SrcIP_s, DestIP_s\r\n| summarize count() by SrcIP_s, bin(TimeGenerated, 5m)\r\n| render areachart ",
-                "size": 0,
-                "title": "Count of destination IPs per source IP",
-                "timeContext": {
-                  "durationMs": 86400000
-                },
-                "queryType": 0,
-                "resourceType": "microsoft.operationalinsights/workspaces"
+            "customWidth": "50",
+            "name": "query - 2"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_RG=iif(isempty(VM1_s), '', split(VM1_s,'/')[0])\r\n| extend VM_name=iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| where iif(isempty('{VM_RG}'), true, VM_RG contains '{VM_RG}')\r\n| where iif(isempty('{VM_Name}'), true, VM_name contains '{VM_Name}')\r\n| where isnotempty(SrcIP_s) \r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| project TimeGenerated, Volume, SrcIP_s\r\n| summarize sum(Volume) by SrcIP_s, bin(TimeGenerated, 5m)\r\n| render areachart ",
+              "size": 0,
+              "title": "Volume (Inbound+Outbound) per source IP",
+              "timeContext": {
+                "durationMs": 86400000
               },
-              "customWidth": "50",
-              "name": "query - 5"
-            }
-          ]
-        },
-        "name": "MainGroup"
-      }
-    ],
-    "fallbackResourceIds": [
-      "/subscriptions/e7da9914-9b05-4891-893c-546cb7b0422e/resourcegroups/nvalab/providers/microsoft.operationalinsights/workspaces/log24664"
-    ],
-    "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
-  }
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "customWidth": "50",
+            "name": "query - 3"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_RG=iif(isempty(VM1_s), '', split(VM1_s,'/')[0])\r\n| extend VM_name=iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| where iif(isempty('{VM_RG}'), true, VM_RG contains '{VM_RG}')\r\n| where iif(isempty('{VM_Name}'), true, VM_name contains '{VM_Name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_RG, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, bin(TimeGenerated, 5m)\r\n| render areachart ",
+              "size": 0,
+              "title": "Volume (Inbound+Outbound) per destination port",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "customWidth": "50",
+            "name": "query - 4"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_RG=iif(isempty(VM1_s), '', split(VM1_s,'/')[0])\r\n| extend VM_name=iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| where iif(isempty('{VM_RG}'), true, VM_RG contains '{VM_RG}')\r\n| where iif(isempty('{VM_Name}'), true, VM_name contains '{VM_Name}')\r\n| where isnotempty(SrcIP_s) and isnotempty(DestIP_s)\r\n| distinct bin(TimeGenerated, 5m), SrcIP_s, DestIP_s\r\n| summarize count() by SrcIP_s, bin(TimeGenerated, 5m)\r\n| render areachart ",
+              "size": 0,
+              "title": "Count of destination IPs per source IP",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "customWidth": "50",
+            "name": "query - 5"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend SrcVM_RG = iif(isempty(VM1_s), '', split(VM1_s,'/')[0])\r\n| extend SrcVM_name = iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| distinct SrcIP_s, DestIP_s, SrcVM_name, SrcVM_RG\r\n| summarize count() by SrcIP_s, SrcVM_name, SrcVM_RG\r\n| project-rename NumOfDstIPs=count_\r\n| top 5 by NumOfDstIPs\r\n",
+              "size": 0,
+              "title": "Top VMs with number of Dest IPs",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "customWidth": "50",
+            "name": "query - 6"
+          }
+        ]
+      },
+      "name": "MainGroup"
+    }
+  ],
+  "fallbackResourceIds": [
+    "/subscriptions/ebb79bc0-aa86-44a7-8111-cabbe0c43993/resourcegroups/ch1-opsrg-pri/providers/microsoft.operationalinsights/workspaces/ch1-la"
+  ],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}
