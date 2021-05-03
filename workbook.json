@@ -9,11 +9,46 @@
       "name": "Header"
     },
     {
+      "type": 11,
+      "content": {
+        "version": "LinkItem/1.0",
+        "style": "tabs",
+        "links": [
+          {
+            "id": "52de57bf-f1f1-443d-98a0-8f546d02a905",
+            "cellValue": "VisibleTab",
+            "linkTarget": "parameter",
+            "linkLabel": "Anomaly Detection",
+            "subTarget": "Anomalies",
+            "preText": "Anomaly Detection",
+            "style": "primary"
+          },
+          {
+            "id": "83cdc1ff-b9a7-4a07-b7dd-0fc3f9d5ed94",
+            "cellValue": "VisibleTab",
+            "linkTarget": "parameter",
+            "linkLabel": "NSG Hits",
+            "subTarget": "Hits",
+            "preText": "NSG Hits",
+            "style": "secondary"
+          }
+        ]
+      },
+      "name": "links - 4"
+    },
+    {
       "type": 12,
       "content": {
         "version": "NotebookGroup/1.0",
         "groupType": "editable",
         "items": [
+          {
+            "type": 1,
+            "content": {
+              "json": "## Anomaly Analysis\r\n\r\nThese charts characterize your traffic so that you can find deviations from normal behavior"
+            },
+            "name": "text - 9"
+          },
           {
             "type": 9,
             "content": {
@@ -210,7 +245,7 @@
               "version": "KqlItem/1.0",
               "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_RG=iif(isempty(VM1_s), '', split(VM1_s,'/')[0])\r\n| extend VM_name=iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| where iif(isempty('{VM_RG}'), true, VM_RG contains '{VM_RG}')\r\n| where iif(isempty('{VM_Name}'), true, VM_name contains '{VM_Name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_RG, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, bin(TimeGenerated, 5m)\r\n| summarize avg(sum_Volume) by DestPortLong\r\n| join (AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_RG=iif(isempty(VM1_s), '', split(VM1_s,'/')[0])\r\n| extend VM_name=iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| where iif(isempty('{VM_RG}'), true, VM_RG contains '{VM_RG}')\r\n| where iif(isempty('{VM_Name}'), true, VM_name contains '{VM_Name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_RG, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, bin(TimeGenerated, 5m))\r\non DestPortLong\r\n| extend DiffToAvg = round(abs(sum_Volume - avg_sum_Volume) / avg_sum_Volume, 2)\r\n| where DiffToAvg > 0\r\n| project TimeGenerated, DestPortLong, DiffToAvg\r\n| render areachart \r\n",
               "size": 0,
-              "title": "Normalized Absolute Average Deviation Bandwidth per Port",
+              "title": "Absolute Average Deviation Bandwidth per Port",
               "timeContext": {
                 "durationMs": 86400000
               },
@@ -226,7 +261,7 @@
               "version": "KqlItem/1.0",
               "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_RG=iif(isempty(VM1_s), '', split(VM1_s,'/')[0])\r\n| extend VM_name=iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| where iif(isempty('{VM_RG}'), true, VM_RG contains '{VM_RG}')\r\n| where iif(isempty('{VM_Name}'), true, VM_name contains '{VM_Name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_RG, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, VM_name, bin(TimeGenerated, 5m)\r\n| summarize avg(sum_Volume) by DestPortLong, VM_name\r\n| join (AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_RG=iif(isempty(VM1_s), '', split(VM1_s,'/')[0])\r\n| extend VM_name=iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| where iif(isempty('{VM_RG}'), true, VM_RG contains '{VM_RG}')\r\n| where iif(isempty('{VM_Name}'), true, VM_name contains '{VM_Name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_RG, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, VM_name, bin(TimeGenerated, 5m))\r\non DestPortLong, VM_name\r\n| extend DiffToAvg = round(abs(sum_Volume - avg_sum_Volume) / avg_sum_Volume, 2)\r\n| project TimeGenerated, DestPortLong, DiffToAvg, VM_name\r\n| where isnotempty(VM_name) and DiffToAvg > 0\r\n| summarize max(DiffToAvg) by VM_name, DestPortLong\r\n| sort by max_DiffToAvg desc\r\n",
               "size": 0,
-              "title": "Top VMs and protocols per Normalized Bandwidth Absolute Average Deviation",
+              "title": "Top VMs and protocols per Bandwidth Absolute Average Deviation",
               "timeContext": {
                 "durationMs": 86400000
               },
@@ -238,12 +273,22 @@
           }
         ]
       },
+      "conditionalVisibility": {
+        "parameterName": "VisibleTab",
+        "comparison": "isEqualTo",
+        "value": "Anomalies"
+      },
       "name": "MainGroup"
     },
     {
       "type": 1,
       "content": {
-        "json": "# Destination IP traffic\r\n\r\nThe following charts can be used to diagnose traffic arriving to a specific application"
+        "json": "## NSG Hits Analysis\r\n\r\nThe following charts can be used to diagnose traffic arriving to a specific application"
+      },
+      "conditionalVisibility": {
+        "parameterName": "VisibleTab",
+        "comparison": "isEqualTo",
+        "value": "Hits"
       },
       "name": "text - 2"
     },
@@ -313,10 +358,42 @@
                   "id": "5d2ab077-aac4-4d12-bad0-46e4a7546556",
                   "version": "KqlParameterItem/1.0",
                   "name": "VM_name",
-                  "label": "Destination VM Name",
+                  "label": "VM Name",
                   "type": 2,
                   "query": "AzureNetworkAnalytics_CL\r\n| where isnotempty (VM_s)\r\n| extend VM_Name=tostring(split(VM2_s,'/')[1])\r\n| distinct VM_Name\r\n| where isnotempty(VM_Name)\r\n| sort by VM_Name asc",
                   "value": "vm03",
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "timeContext": {
+                    "durationMs": 86400000
+                  },
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces"
+                },
+                {
+                  "id": "35007100-86cb-4ddc-bfa1-b241e0ce94eb",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "NSG_name",
+                  "label": "NSG Name",
+                  "type": 2,
+                  "query": "AzureNetworkAnalytics_CL\r\n| where isnotempty (NSGList_s)\r\n| distinct NSGList_s\r\n| sort by NSGList_s asc",
+                  "value": null,
+                  "typeSettings": {
+                    "additionalResourceOptions": []
+                  },
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces"
+                },
+                {
+                  "id": "ec82d970-42e0-4325-9008-c964be3d1b88",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "NSG_rule_name",
+                  "label": "NSG Rule Name",
+                  "type": 2,
+                  "query": "AzureNetworkAnalytics_CL\r\n| where isnotempty (NSGRule_s)\r\n| where iif(isempty('{NSG_name}'), True, NSGList_s == '{NSG_name}')\r\n| distinct NSGRule_s\r\n| sort by NSGRule_s asc",
+                  "value": null,
                   "typeSettings": {
                     "additionalResourceOptions": [],
                     "showDefault": false
@@ -338,7 +415,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_name=iif(isempty(VM2_s), '', split(VM2_s,'/')[1])\r\n| where iif(isempty('{VM_name}'), True, VM_name contains '{VM_name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| where FlowDirection_s == 'I' and FlowStatus_s == \"A\"\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, bin(TimeGenerated, 5m)\r\n| render areachart",
+              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_name=iif(isempty(VM2_s), '', split(VM2_s,'/')[1])\r\n| where iif(isempty('{VM_name}'), True, VM_name contains '{VM_name}')\r\n| where iif(isempty('{NSG_name}'), True, NSGList_s == '{NSG_name}')\r\n| where iif(isempty('{NSG_rule_name}'), True, NSGRule_s == '{NSG_rule_name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| where FlowDirection_s == 'I' and FlowStatus_s == \"A\"\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, bin(TimeGenerated, 5m)\r\n| render areachart",
               "size": 0,
               "title": "Inbound Allowed bandwidth",
               "timeContext": {
@@ -354,7 +431,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_name=iif(isempty(VM2_s), '', split(VM2_s,'/')[1])\r\n| where iif(isempty('{VM_name}'), True, VM_name contains '{VM_name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| where FlowDirection_s == 'O' and FlowStatus_s == \"A\"\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, bin(TimeGenerated, 5m)\r\n| render areachart",
+              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_name=iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| where iif(isempty('{VM_name}'), True, VM_name contains '{VM_name}')\r\n| where iif(isempty('{NSG_name}'), True, NSGList_s == '{NSG_name}')\r\n| where iif(isempty('{NSG_rule_name}'), True, NSGRule_s == '{NSG_rule_name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| where FlowDirection_s == 'O' and FlowStatus_s == \"A\"\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, bin(TimeGenerated, 5m)\r\n| render areachart",
               "size": 0,
               "title": "Outbound Allowed Bandwidth",
               "timeContext": {
@@ -370,7 +447,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_name=iif(isempty(VM2_s), '', split(VM2_s,'/')[1])\r\n| where iif(isempty('{VM_name}'), True, VM_name contains '{VM_name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| where FlowDirection_s == 'I' and FlowStatus_s == \"D\"\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, bin(TimeGenerated, 5m)\r\n| render areachart",
+              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_name=iif(isempty(VM2_s), '', split(VM2_s,'/')[1])\r\n| where iif(isempty('{VM_name}'), True, VM_name contains '{VM_name}')\r\n| where iif(isempty('{NSG_name}'), True, NSGList_s == '{NSG_name}')\r\n| where iif(isempty('{NSG_rule_name}'), True, NSGRule_s == '{NSG_rule_name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| where FlowDirection_s == 'I' and FlowStatus_s == \"D\"\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, bin(TimeGenerated, 5m)\r\n| render areachart",
               "size": 0,
               "title": "Inbound Dropped Bandwidth",
               "timeContext": {
@@ -386,7 +463,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_name=iif(isempty(VM2_s), '', split(VM2_s,'/')[1])\r\n| where iif(isempty('{VM_name}'), True, VM_name contains '{VM_name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| where FlowDirection_s == 'O' and FlowStatus_s == \"D\"\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, bin(TimeGenerated, 5m)\r\n| render areachart",
+              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_name=iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| where iif(isempty('{VM_name}'), True, VM_name contains '{VM_name}')\r\n| where iif(isempty('{NSG_name}'), True, NSGList_s == '{NSG_name}')\r\n| where iif(isempty('{NSG_rule_name}'), True, NSGRule_s == '{NSG_rule_name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| where FlowDirection_s == 'O' and FlowStatus_s == \"D\"\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| project TimeGenerated, Volume, VM_name, NSGList_s, SrcIP_s, DestPortLong\r\n| summarize sum(Volume) by DestPortLong, bin(TimeGenerated, 5m)\r\n| render areachart",
               "size": 0,
               "title": "Outbound Dropped Bandwidth",
               "timeContext": {
@@ -397,8 +474,43 @@
             },
             "customWidth": "50",
             "name": "query - 4"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_name=iif(isempty(VM2_s), '', split(VM2_s,'/')[1])\r\n| where iif(isempty('{VM_name}'), True, VM_name contains '{VM_name}')\r\n| where iif(isempty('{NSG_name}'), True, NSGList_s == '{NSG_name}')\r\n| where iif(isempty('{NSG_rule_name}'), True, NSGRule_s == '{NSG_rule_name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| where FlowDirection_s == 'I' and FlowStatus_s == \"A\"\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| extend SrcIP_new = iif(isnotempty(SrcIP_s), SrcIP_s, FlowType_s)\r\n//| project TimeGenerated, Volume, VM_name, SrcIP_s, DstIP_s, DestPortLong, NSGList_s, NSGRule_s\r\n| summarize sum(Volume) by SrcIP_new, DestIP_s, DestPortLong, NSGList_s, NSGRule_s\r\n",
+              "size": 0,
+              "title": "Inbound Allowed flows",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "query - 5"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| extend VM_name=iif(isempty(VM1_s), '', split(VM1_s,'/')[1])\r\n| where iif(isempty('{VM_name}'), True, VM_name contains '{VM_name}')\r\n| where iif(isempty('{NSG_name}'), True, NSGList_s == '{NSG_name}')\r\n| where iif(isempty('{NSG_rule_name}'), True, NSGRule_s == '{NSG_rule_name}')\r\n| extend Volume=InboundBytes_d + OutboundBytes_d\r\n| where isnotempty(L4Protocol_s)\r\n| where FlowDirection_s == 'O' and FlowStatus_s == \"A\"\r\n| extend DestPortLong = strcat(L4Protocol_s, toint(DestPort_d))\r\n| extend SrcIP_new = iif(isnotempty(SrcIP_s), SrcIP_s, FlowType_s)\r\n//| project TimeGenerated, Volume, VM_name, SrcIP_s, DstIP_s, DestPortLong, NSGList_s, NSGRule_s\r\n| summarize sum(Volume) by SrcIP_new, DestIP_s, DestPortLong, NSGList_s, NSGRule_s\r\n",
+              "size": 0,
+              "title": "Outbound Allowed Flows",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "query - 6"
           }
         ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "VisibleTab",
+        "comparison": "isEqualTo",
+        "value": "Hits"
       },
       "name": "dst"
     }
