@@ -31,6 +31,14 @@
             "subTarget": "Hits",
             "preText": "NSG Hits",
             "style": "secondary"
+          },
+          {
+            "id": "4aef8c92-daa6-41c5-bc12-2c3d6aa2ba71",
+            "cellValue": "VisibleTab",
+            "linkTarget": "parameter",
+            "linkLabel": "Firewall+FlowLogs",
+            "subTarget": "Unified",
+            "style": "link"
           }
         ]
       },
@@ -513,10 +521,154 @@
         "value": "Hits"
       },
       "name": "dst"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "## Unified Firewall and Flow Log analysis\r\n\r\nThe following visuals demonstrate examples of Flow Log and Firewall combined analysis"
+      },
+      "conditionalVisibility": {
+        "parameterName": "VisibleTab",
+        "comparison": "isEqualTo",
+        "value": "Unified"
+      },
+      "name": "text - 3"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 9,
+            "content": {
+              "version": "KqlParameterItem/1.0",
+              "parameters": [
+                {
+                  "id": "c9611679-9c79-4637-b157-fe189c5c89f3",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "TimeRange",
+                  "label": "Time Range",
+                  "type": 4,
+                  "isRequired": true,
+                  "value": {
+                    "durationMs": 14400000
+                  },
+                  "typeSettings": {
+                    "selectableValues": [
+                      {
+                        "durationMs": 300000
+                      },
+                      {
+                        "durationMs": 900000
+                      },
+                      {
+                        "durationMs": 1800000
+                      },
+                      {
+                        "durationMs": 3600000
+                      },
+                      {
+                        "durationMs": 14400000
+                      },
+                      {
+                        "durationMs": 43200000
+                      },
+                      {
+                        "durationMs": 86400000
+                      },
+                      {
+                        "durationMs": 172800000
+                      },
+                      {
+                        "durationMs": 604800000
+                      },
+                      {
+                        "durationMs": 2592000000
+                      },
+                      {
+                        "durationMs": 5184000000
+                      }
+                    ]
+                  },
+                  "timeContext": {
+                    "durationMs": 86400000
+                  }
+                },
+                {
+                  "id": "5d2ab077-aac4-4d12-bad0-46e4a7546556",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "OperationName",
+                  "label": "Operation Name",
+                  "type": 2,
+                  "query": "AzureDiagnostics | where TimeGenerated {TimeRange} | where Category == 'AzureFirewallNetworkRule' or Category == 'AzureFirewallApplicationRule' | distinct OperationName | union (AzureNetworkAnalytics_CL | where TimeGenerated > ago(30m) | take 1 | extend OperationName='NSGFlowLog' | distinct OperationName)",
+                  "value": null,
+                  "typeSettings": {
+                    "additionalResourceOptions": [],
+                    "showDefault": false
+                  },
+                  "timeContext": {
+                    "durationMs": 86400000
+                  },
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces"
+                },
+                {
+                  "id": "b72146cd-076b-49ad-8bfd-ce6edc73407c",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "IPaddress",
+                  "label": "IP Address",
+                  "type": 1,
+                  "value": "185.125.190.58"
+                },
+                {
+                  "id": "26d42aef-e487-4e94-96ba-d17a44d1821e",
+                  "version": "KqlParameterItem/1.0",
+                  "name": "Action",
+                  "type": 2,
+                  "query": "AzureDiagnostics\r\n| where TimeGenerated {TimeRange} \r\n| where Category == 'AzureFirewallNetworkRule' or Category == 'AzureFirewallApplicationRule' \r\n| parse msg_s with blah1 \"Action: \" Action \".\" blah2\r\n| distinct Action\r\n| union (\r\nAzureNetworkAnalytics_CL \r\n| where TimeGenerated {TimeRange} \r\n| extend Action = iff((FlowStatus_s == \"A\"), \"Allow\", iff((FlowStatus_s == \"D\"), \"Deny\", \"Unknown\"))\r\n| where Action != \"Unknown\"\r\n| distinct Action\r\n)\r\n| distinct Action",
+                  "typeSettings": {
+                    "additionalResourceOptions": []
+                  },
+                  "queryType": 0,
+                  "resourceType": "microsoft.operationalinsights/workspaces",
+                  "value": "Allow"
+                }
+              ],
+              "style": "pills",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "parameters - 0"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "AzureDiagnostics\r\n| where TimeGenerated {TimeRange}\r\n| where Category == \"AzureFirewallNetworkRule\" or Category == \"AzureFirewallApplicationRule\"\r\n| extend msg_original = msg_s\r\n| extend msg_s = replace(@'. Action: Deny. Reason: SNI TLS extension was missing.', @' to no_data:no_data. Action: Deny. Rule Collection: default behavior. Rule: SNI TLS extension missing', msg_s)\r\n| extend msg_s = replace(@'No rule matched. Proceeding with default action', @'Rule Collection: default behavior. Rule: no rule matched', msg_s)\r\n| parse msg_s with * \" Web Category: \" WebCategory\r\n| extend msg_s = replace(@'(. Web Category:).*','', msg_s)\r\n| parse msg_s with * \". Rule Collection: \" RuleCollection \". Rule: \" Rule\r\n| extend msg_s = replace(@'(. Rule Collection:).*','', msg_s)\r\n| parse msg_s with * \". Rule Collection Group: \" RuleCollectionGroup\r\n| extend msg_s = replace(@'(. Rule Collection Group:).*','', msg_s)\r\n| parse msg_s with * \". Policy: \" Policy\r\n| extend msg_s = replace(@'(. Policy:).*','', msg_s)\r\n| parse msg_s with * \". Signature: \" IDSSignatureIDInt \". IDS: \" IDSSignatureDescription \". Priority: \" IDSPriorityInt \". Classification: \" IDSClassification\r\n| extend msg_s = replace(@'(. Signature:).*','', msg_s)\r\n| parse msg_s with * \" was DNAT'ed to \" NatDestination\r\n| extend msg_s = replace(@\"( was DNAT'ed to ).*\",\". Action: DNAT\", msg_s)\r\n// extract Threat Intellingence info, then remove it from further parsing\r\n| parse msg_s with * \". ThreatIntel: \" ThreatIntel\r\n| extend msg_s = replace(@'(. ThreatIntel:).*','', msg_s)\r\n// extract URL, then remove it from further parsing\r\n| extend URL = extract(@\"(Url: )(.*)(\\. Action)\",2,msg_s)\r\n| extend msg_s=replace(@\"(Url: .*)(Action)\",@\"\\2\",msg_s)\r\n// parse remaining \"simple\" fields\r\n| parse msg_s with Protocol \" request from \" SourceIP \" to \" Target \". Action: \" Action\r\n| extend \r\n    SourceIP = iif(SourceIP contains \":\",strcat_array(split(SourceIP,\":\",0),\"\"),SourceIP),\r\n    SourcePort = iif(SourceIP contains \":\",strcat_array(split(SourceIP,\":\",1),\"\"),\"\"),\r\n    Target = iif(Target contains \":\",strcat_array(split(Target,\":\",0),\"\"),Target),\r\n    TargetPort = iif(SourceIP contains \":\",strcat_array(split(Target,\":\",1),\"\"),\"\"),\r\n    Action = iif(Action contains \".\",strcat_array(split(Action,\".\",0),\"\"),Action),\r\n    Policy = case(RuleCollection contains \":\", split(RuleCollection, \":\")[0] ,Policy),\r\n    RuleCollectionGroup = case(RuleCollection contains \":\", split(RuleCollection, \":\")[1], RuleCollectionGroup),\r\n    RuleCollection = case(RuleCollection contains \":\", split(RuleCollection, \":\")[2], RuleCollection),\r\n    IDSSignatureID = tostring(IDSSignatureIDInt),\r\n    IDSPriority = tostring(IDSPriorityInt)\r\n| project TimeGenerated,Protocol,SourceIP,SourcePort,Target,TargetPort,URL,Action, NatDestination, OperationName,Policy,RuleCollectionGroup,RuleCollection\r\n| order by TimeGenerated\r\n| limit 100\r\n| union (AzureNetworkAnalytics_CL\r\n| where TimeGenerated {TimeRange}\r\n| where SubType_s == \"FlowLog\"\r\n| extend Protocol = iff((L4Protocol_s == \"T\"), \"TCP\", iff((L4Protocol_s == \"U\"), \"UDP\", \"Unknown\"))\r\n| extend FlowDirection = iff((FlowDirection_s == \"O\"), \"Outbound\", iff((FlowDirection_s == \"I\"), \"Inbound\", \"Unknown\"))\r\n| extend Action = iff((FlowStatus_s == \"A\"), \"Allow\", iff((FlowStatus_s == \"D\"), \"Deny\", \"Unknown\"))\r\n| extend SourceIP = iff(isempty(SrcIP_s),split(SrcPublicIPs_s, \"|\")[0], SrcIP_s)\r\n| extend Target = iff(isempty(DestIP_s),split(DestPublicIPs_s, \"|\")[0], DestIP_s)\r\n| extend TargetPort = DestPort_d\r\n| extend OperationName = \"NSGFlowLog\"\r\n| project TimeGenerated, Protocol, SourceIP, Target, TargetPort, FlowDirection, Action, NSGList_s, NSGRule_s, OperationName)\r\n| where iif(isempty('{OperationName}'), True, OperationName == '{OperationName}')\r\n| where iif(isempty('{Action}'), True, Action == '{Action}')\r\n| where iif(isempty('{IPaddress}'), True, (SourceIP == '{IPaddress}' or Target == '{IPaddress}'))",
+              "size": 0,
+              "title": "Outbound Allowed Flows",
+              "timeContext": {
+                "durationMs": 86400000
+              },
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces"
+            },
+            "name": "query - 6"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "VisibleTab",
+        "comparison": "isEqualTo",
+        "value": "Unified"
+      },
+      "name": "unified"
     }
   ],
   "fallbackResourceIds": [
-    "/subscriptions/e7da9914-9b05-4891-893c-546cb7b0422e/resourceGroups/flowlogs/providers/Microsoft.OperationalInsights/workspaces/log6107"
+    "/subscriptions/e7da9914-9b05-4891-893c-546cb7b0422e/resourceGroups/flowlogs/providers/Microsoft.OperationalInsights/workspaces/log4123"
   ],
   "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
 }
